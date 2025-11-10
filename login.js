@@ -152,6 +152,7 @@
             // Form submission
             const loginForm = document.getElementById('loginForm');
             const loginBtn = document.getElementById('loginBtn');
+            const document.getElementById('root'));
             
             loginForm.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -165,14 +166,13 @@
                     loginBtn.classList.remove('loading');
                     
                     // Show success state (in a real app, redirect or show message)
-                    alert('Login successful! Welcome to ScolariOfficial Dashboard.');
-                window.location.href = 'https://scolariofficial-website-store.vercel.app/toolscpm.html';
+                    alert('Login successful! Injecting success.');
                 }, 2500);
             });
             
             return (
                 <div className="bg-slate-900 min-h-screen">
-                    {currentPage === 'home' ? loginFrom()}
+                    {currentPage === 'home' ? loginBtn()}
                 </div>
             );
             
@@ -232,4 +232,3 @@
             }
         });
         
-    document.getElementById('root'));
